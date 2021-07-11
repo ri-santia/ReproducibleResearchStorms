@@ -37,11 +37,15 @@ stormData$EVTYPE <- gsub( "STRONG WINDS","STRONG WIND",stormData$EVTYPE, ignore.
 stormData$EVTYPE <- gsub( "SNOW SQUALLS","SNOW SQUALL",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE <- gsub( "THUNDERSTORM WINDS","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE <- gsub( "THUNDERTORM WINDS","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "TSTM WIND","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE[grepl( "TROPICAL STORM GORDON", stormData$EVTYPE)] <-"TROPICAL STORM"
 stormData$EVTYPE <- gsub( "WILDFIRE","WILD FIRE",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE <- gsub( "WINDS","WIND",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE <- gsub( "WINTER STORMS","WINTER STORM",stormData$EVTYPE, ignore.case = T)
 stormData$EVTYPE <- gsub( "WINTRY MIX","WINTER WEATHER/MIX",stormData$EVTYPE, ignore.case = T)
+
+
+str(stormData)
 
 ## Check for NAs
 list_na <- colnames(stormData)[ apply(stormData, 2, anyNA) ]
@@ -100,6 +104,7 @@ g2 <- ggplot(Damage2,aes(x=factor(EVTYPE),y=TotalDamageImpact)) +
   coord_flip() + 
   labs(y='Total Damage Impact',x='Event Types') +
   ggtitle("Top 10 Weather events with greatest economic consequences")
+
 
 
 

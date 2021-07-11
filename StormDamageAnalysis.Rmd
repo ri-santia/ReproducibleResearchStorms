@@ -1,0 +1,198 @@
+---
+title: "Impact of severe weather events on population health and economy"
+author: "Ricardo Santiago"
+date: "7/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Synopsis
+
+In this report we analyze the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database for major storms and weather events. 
+We will process the data to determine the events that most severely impact population health and the economy. We will focus on fatalities and injuries as metrics for population health, and property damage and crop damage as metrics for economic impact.
+
+---------------------------------------------------------------------
+
+## Data Processing
+
+First we load the libraries we need for processing and plotting.
+
+```{r  }
+  library(dplyr)
+  library(ggplot2)
+  library(stringr)
+
+```
+
+Next we download the file if necessary and load the data
+```{r}
+  fileURL<- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+  datafile <- "StormData.csv.bz2"
+  
+  ## Download if it is not already in the working directory
+  if(!file.exists(datafile)){
+    download.file(fileURL, datafile, method="curl")
+  }
+  
+  stormData <- read.csv(datafile, header = TRUE, sep = ",", quote = "\"")
+
+```
+
+```{r}
+  str(stormData)
+
+```
+
+We will focus on thevariables EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, and CROPDMGEXP. 
+We will check for missing values in these variables.
+
+```{r}
+list_na <- colnames(stormData)[ apply(stormData, 2, anyNA) ]
+list_na
+```
+Since none of these variables have missing values we can proceed with processing the data.
+
+There are inconsistencies in event types so they need to be cleaned up.
+We make them all upper case, then correct typos, adjust pluralization, and remove the names from named events (eg. Hurricane Erin -> Hurricane)
+
+```{r}
+stormData$EVTYPE <- toupper(stormData$EVTYPE)
+
+stormData$EVTYPE <- gsub('AVALANCE','AVALANCHE',stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub('FLOODING','FLOOD',stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub('FLOODS','FLOOD',stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE[grepl( "FLASH FLOOD", stormData$EVTYPE)] <-"FLASH FLOOD"
+stormData$EVTYPE <- gsub( 'COASTALSTORM','COASTAL STORM',stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( 'HEAT WAVES','HEAT WAVE',stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE[grepl( "HURRICANE ERIN", stormData$EVTYPE)] <-"HURRICANE"
+stormData$EVTYPE[grepl( "HURRICANE FELIX", stormData$EVTYPE)] <-"HURRICANE"
+stormData$EVTYPE[grepl( "HURRICANE OPAL", stormData$EVTYPE)] <-"HURRICANE"
+stormData$EVTYPE <- gsub( "LANDSLIDES","LANDSLIDE",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "LIGHTNING.","LIGHTNING",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "MUDSLIDES","MUDSLIDE",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "RIP CURRENTS","RIP CURRENT",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "SNOW SQUALLS","SNOW SQUALL",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "STRONG WINDS","STRONG WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "SNOW SQUALLS","SNOW SQUALL",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "THUNDERSTORM WINDS","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "THUNDERTORM WINDS","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "TSTM WIND","THUNDERSTORM WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE[grepl( "TROPICAL STORM GORDON", stormData$EVTYPE)] <-"TROPICAL STORM"
+stormData$EVTYPE <- gsub( "WILDFIRE","WILD FIRE",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "WINDS","WIND",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "WINTER STORMS","WINTER STORM",stormData$EVTYPE, ignore.case = T)
+stormData$EVTYPE <- gsub( "WINTRY MIX","WINTER WEATHER/MIX",stormData$EVTYPE, ignore.case = T)
+```
+
+In the case of property and crop damage the amounts are modified by a corresponding exponent indicator (PROPDMGEXP,CROPDMGEXP:
+
+
+H = 100, K = 1000, M = 1000000, B = 1000000000
+
+With this information we can update the PROPDAMAGE, and CROPDAMAGE variables to reflect the correct amounts.
+We also add a two new variables:
+  HealthImpact = INJURIES + FATALITIES 
+  Damage = PROPDAMAGE + CROPDAMAGE
+  
+This will help us summarize properly. We store all this in a new data frame.
+
+```{r}
+NewStormData <- stormData %>% 
+mutate(PROPDAMAGE = case_when(
+  PROPDMGEXP == "H" || PROPDMGEXP == "h" ~ PROPDMG * 1e+02,
+  PROPDMGEXP == "K" || PROPDMGEXP == "k" ~ PROPDMG * 1e+03,
+  PROPDMGEXP == "M" || PROPDMGEXP == "m" ~ PROPDMG * 1e+06,
+  PROPDMGEXP == "B" || PROPDMGEXP == "b" ~ PROPDMG * 1e+09,
+  TRUE ~ PROPDMG),
+  CROPDAMAGE = case_when(
+    CROPDMGEXP == "H" || CROPDMGEXP == "h" ~ CROPDMG * 1e+02,
+    CROPDMGEXP == "K" || CROPDMGEXP == "k" ~ CROPDMG * 1e+03,
+    CROPDMGEXP == "M" || CROPDMGEXP == "m" ~ CROPDMG * 1e+06,
+    CROPDMGEXP == "B" || CROPDMGEXP == "b" ~ CROPDMG * 1e+09,
+    TRUE ~ CROPDMG)
+  ) %>% 
+mutate(HealthImpact = INJURIES + FATALITIES) %>%
+mutate(Damage = PROPDAMAGE + CROPDAMAGE)
+
+head(NewStormData)
+
+```
+
+Now that we have the data cleaned, we can proceed to summarize it for analysis.
+
+##HealtImpact data
+We summarize health impact by event type and sort in descending order by Total Health Impact.
+```{r}
+HealthImpactSum <- NewStormData %>%
+  group_by(EVTYPE) %>%
+  summarise(TotalHealthImpact = sum(HealthImpact))
+
+HealthImpactSum <- HealthImpactSum[with(HealthImpactSum,order(-TotalHealthImpact)),]
+```
+
+##Damage Impact data
+We summarize damage impact by event type and sort in descending order by Total Damage Impact.
+```{r}
+
+DamageImpactSum <- NewStormData %>%
+  group_by(EVTYPE) %>%
+  summarise(TotalDamageImpact = sum(Damage))
+
+DamageImpactSum <- DamageImpactSum[with(DamageImpactSum,order(-TotalDamageImpact)),]
+```
+
+
+## Results
+**The impacts on population health (top 20):**
+```{r}
+head(HealthImpactSum,20)
+```
+
+```{r}
+
+Health1 <- head(HealthImpactSum,20)
+Health2 <- Health1[order(Health1$TotalHealthImpact),]
+Health2$EVTYPE=factor(Health2$EVTYPE,levels=Health2$EVTYPE)
+g1 <- ggplot(Health2,aes(x=factor(EVTYPE),y=TotalHealthImpact)) + 
+  geom_bar(stat='identity', fill="red") + coord_flip() + 
+  labs(y='Total Health Impact',x='Event Types', caption='Fig 1. Summary of Weather Event Health Impacts') +
+  ggtitle("Top 20 most harmful Weather events")
+  
+g1
+```
+
+Based on the summarized data we can see that tornadoes are by far the most damaging in terms
+of injuries and fatalities. After tornadoes we have thunderstorm wind, excessive heat, floods, 
+and lightning as the other large impact events.
+
+
+**The economic impacts (top 20):**
+```{r}
+head(DamageImpactSum,20)
+```
+
+```{r}
+Damage1 <- head(DamageImpactSum,20)
+Damage2 <- Damage1[order(Damage1$TotalDamageImpact),]
+Damage2$EVTYPE=factor(Damage2$EVTYPE,levels=Damage2$EVTYPE)
+g2 <- ggplot(Damage2,aes(x=factor(EVTYPE),y=TotalDamageImpact)) + 
+  geom_bar(stat='identity', fill="blue") + 
+  coord_flip() + 
+  labs(y='Total Damage Impact',x='Event Types', caption='Fig 2. Summary of Weather Event Economic Impacts') +
+  ggtitle("Top 20 Weather events with greatest economic consequences")
+
+g2
+```
+
+Here we see that once again, tornadoes have the biggest economic impact based on 
+property and crop damage. However, this time thunderstorm winds come in as close 
+second, followed by flash floods, floods, hail, lightning, and high winds.
+
+## Conclusions
+Tornadoes lead in both population health and economic damage, most likely due to 
+their short warning times and intense nature. Thunderstorm wind on the other hand 
+cause a great deal of property damage, but greater warning time allows us to 
+prevent more fatalities and injuries. 
