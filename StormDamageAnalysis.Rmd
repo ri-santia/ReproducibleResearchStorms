@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+---------------------------------------------------------------------
 ## Synopsis
 
 In this report we analyze the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database for major storms and weather events. 
@@ -46,7 +46,7 @@ Next we download the file if necessary and load the data
 
 ```
 
-We will focus on thevariables EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, and CROPDMGEXP. 
+We will focus on the variables EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, and CROPDMGEXP. 
 We will check for missing values in these variables.
 
 ```{r}
@@ -94,7 +94,9 @@ H = 100, K = 1000, M = 1000000, B = 1000000000
 
 With this information we can update the PROPDAMAGE, and CROPDAMAGE variables to reflect the correct amounts.
 We also add a two new variables:
+
   HealthImpact = INJURIES + FATALITIES 
+  
   Damage = PROPDAMAGE + CROPDAMAGE
   
 This will help us summarize properly. We store all this in a new data frame.
@@ -123,7 +125,7 @@ head(NewStormData)
 
 Now that we have the data cleaned, we can proceed to summarize it for analysis.
 
-##HealtImpact data
+**HealtImpact data**
 We summarize health impact by event type and sort in descending order by Total Health Impact.
 ```{r}
 HealthImpactSum <- NewStormData %>%
@@ -133,7 +135,7 @@ HealthImpactSum <- NewStormData %>%
 HealthImpactSum <- HealthImpactSum[with(HealthImpactSum,order(-TotalHealthImpact)),]
 ```
 
-##Damage Impact data
+**Damage Impact data**
 We summarize damage impact by event type and sort in descending order by Total Damage Impact.
 ```{r}
 
@@ -144,6 +146,7 @@ DamageImpactSum <- NewStormData %>%
 DamageImpactSum <- DamageImpactSum[with(DamageImpactSum,order(-TotalDamageImpact)),]
 ```
 
+---------------------------------------------------------------------
 
 ## Results
 **The impacts on population health (top 20):**
@@ -191,6 +194,7 @@ Here we see that once again, tornadoes have the biggest economic impact based on
 property and crop damage. However, this time thunderstorm winds come in as close 
 second, followed by flash floods, floods, hail, lightning, and high winds.
 
+---------------------------------------------------------------------
 ## Conclusions
 Tornadoes lead in both population health and economic damage, most likely due to 
 their short warning times and intense nature. Thunderstorm wind on the other hand 
