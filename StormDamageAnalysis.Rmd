@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
----------------------------------------------------------------------
+
 ## Synopsis
 
 In this report we analyze the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database for major storms and weather events. 
